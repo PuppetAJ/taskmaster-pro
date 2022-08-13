@@ -13,32 +13,12 @@ var createTask = function(taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  // Check due date
+  auditTask(taskLi);
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
 };
-
-// $(".card .list-group").sortable({
-//   connectWith: $(".card .list-group"),
-//   scroll: false,
-//   tolerance: "pointer",
-//   helper: "clone",
-//   activate: function(event) {
-//     console.log("activate", this);
-//   },
-//   deactivate: function(event) {
-//     console.log("deactivate", this);
-//   },
-//   over: function(event) {
-//     console.log("over", event.target);
-//   },
-//   out: function(event) {
-//     console.log("out", event.target);
-//   },
-//   update: function(event) {
-//     console.log("update", this);
-//   }
-// });
 
 $(".card .list-group").sortable({
   connectWith: $(".card .list-group"),
@@ -101,6 +81,10 @@ $("#trash").droppable({
   out: function(event, ui) {
     //console.log("out");
   }
+});
+
+$("#modalDueDate").datepicker({
+  minDate: 0
 });
 
 var loadTasks = function() {
@@ -182,11 +166,37 @@ $(".list-group").on("click","span", function() {
 
   $(this).replaceWith(dateInput);
 
+  dateInput.datepicker({
+    minDate: 1,
+    onClose: function() {
+      // When calendar is closed, force a change event on the dateInput
+      $(this).trigger("change");
+    }
+  });
+
   dateInput.trigger("focus");
 
 });
 
-$(".list-group").on("blur" , "input[type='text']", function() {
+var auditTask = function(taskEl) {
+  var date = $(taskEl).find("span").text().trim();
+  console.log(date);
+
+  var time = moment(date, "L").set("hour", 17);
+  console.log(time);
+
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+
+  if (moment().isAfter(time)) {
+    $(taskEl).addClass("list-group-item-danger");
+  }
+  else if (Math.abs(moment().diff(time, "days")) <= 2) {
+    $(taskEl).addClass("list-group-item-warning");
+  }
+
+}
+
+$(".list-group").on("change" , "input[type='text']", function() {
 
   var date = $(this)
     .val()
@@ -209,6 +219,8 @@ $(".list-group").on("blur" , "input[type='text']", function() {
     .text(date);
 
   $(this).replaceWith(taskSpan);
+
+  auditTask($(taskSpan).closest(".list-group-item"));
 
 });
 
